@@ -1,0 +1,138 @@
+---
+title: "Activity 04: Data Wrangling with Tidyverse"
+author: "Ingrid Baduel"
+date: "25 May 2026"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+## Overview
+
+This activity applies **Tidyverse** tools to wrangle and explore a habitat dataset from Palawan Island. The dataset contains transect-level measurements of vegetation features across different habitat types. We use core Tidyverse functions — `select()`, `filter()`, `arrange()`, `group_by()`, `summarize()`, `mutate()`, and `pivot_wider()` — to extract insights from the data.
+
+---
+
+## Part A: Read and Filter
+
+### A1. Install and Load Tidyverse
+
+```{r load-packages}
+# install.packages("tidyverse")  # Run once if not yet installed
+library(tidyverse)
+```
+
+---
+
+### A2. Read the CSV File
+
+We use `read_csv()` from the `readr` package (part of Tidyverse) to load the habitat dataset.
+
+```{r load-data}
+habitat_df <- read_csv("habitat_types.csv")
+```
+
+---
+
+### A3. Data Structure
+
+`glimpse()` gives a compact, transposed view of the dataset — showing column names, types, and a preview of values.
+
+```{r structure}
+glimpse(habitat_df)
+```
+
+---
+
+### A4. Select Relevant Columns
+
+We keep only the four columns needed for our initial analysis: `Transect`, `Htypes`, `SmallTrees`, and `FloweringTrees`.
+
+```{r select-cols}
+sel_df <- habitat_df |>
+  select(Transect, Htypes, SmallTrees, FloweringTrees)
+
+print(sel_df)
+```
+
+---
+
+### A5. Filter CVT Habitat and Sort by SmallTrees
+
+We filter for **CVT (Cultivation Type)** sites only, then sort by `SmallTrees` in descending order to identify the transects with the most small trees.
+
+```{r filter-cvt}
+cvt_df <- sel_df |>
+  filter(Htypes == "CVT") |>
+  arrange(desc(SmallTrees))
+
+print(cvt_df)
+```
+
+> **Finding:** IT2P7 and IT3P0 have the most small trees, each with a count of 10.
+
+---
+
+### A6. Mean Flowering Trees per Habitat Type
+
+We group by habitat type and compute the **mean number of flowering trees** per group using `group_by()` and `summarize()`.
+
+```{r mean-flowering}
+mean_flowering <- sel_df |>
+  group_by(Htypes) |>
+  summarize(mean_FloweringTrees = mean(FloweringTrees, na.rm = TRUE))
+
+print(mean_flowering)
+```
+
+> **Finding:** ESG (5.38) and ASG (5.26) have very similar means and do not differ significantly from each other. CVT has a notably higher mean (8.86).
+
+---
+
+### A7. Add a Derived Column: HerbGroundDiff
+
+We expand our selected columns to include `HerbsCover` and `GroundCover`, then use `mutate()` to create a new column `HerbGroundDiff`, which is the difference between the two cover types.
+
+```{r mutate-diff}
+sel_df_mod <- habitat_df |>
+  select(Transect, Htypes, SmallTrees, FloweringTrees, HerbsCover, GroundCover) |>
+  mutate(HerbGroundDiff = HerbsCover - GroundCover)
+
+print(sel_df_mod)
+```
+
+We then identify transects where herb and ground cover are equal (difference = 0).
+
+```{r zero-diff}
+sel_df_mod |>
+  filter(HerbGroundDiff == 0) |>
+  select(Transect, HerbGroundDiff)
+```
+
+> **Finding:** Transects IT1P5, IT2P5, and IT3P1 have no difference between herb and ground cover.
+
+---
+
+### A8. Reshape to Wide Format with `pivot_wider()`
+
+We pivot the data to **wide format**, spreading habitat types across columns. Each row becomes a unique transect, and the values for `SmallTrees`, `FloweringTrees`, and `HerbGroundDiff` are spread into habitat-specific columns.
+
+```{r pivot-wider}
+sel_df_mod |>
+  select(Transect, Htypes, SmallTrees, FloweringTrees, HerbGroundDiff) |>
+  pivot_wider(names_from  = Htypes,
+              values_from = c(SmallTrees, FloweringTrees, HerbGroundDiff)) ->
+  wider_df
+
+print(wider_df)
+```
+
+---
+
+## Part B: Reflection
+
+Tidyverse feels more readable than base R because of the **pipe operator** (`|>`): you can follow the logic step by step, like reading a sentence. Functions like `filter()`, `select()`, and `group_by()` are more intuitive than base R indexing with brackets.
+
+The most challenging part was `pivot_wider()` — the `names_from` and `values_from` arguments took some getting used to. Overall, Tidyverse feels cleaner, especially for longer pipelines.
