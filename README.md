@@ -2,7 +2,8 @@
 
 **Author: Ingrid Baduel**
 
-https://github.com/IngridBaduel/datasci/tree/90c5a128fc076c7488f753de998f2db4f25fa18c/myrmarkdown
+https://ingridbaduel.github.io/datasci/myrmarkdown/Baduel_Act03.html
+https://ingridbaduel.github.io/datasci/myrmarkdown/Baduel_Act04.html
 
 
 
